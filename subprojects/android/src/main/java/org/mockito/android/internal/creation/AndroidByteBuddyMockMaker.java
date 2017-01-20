@@ -1,13 +1,32 @@
 package org.mockito.android.internal.creation;
 
 import org.mockito.internal.creation.bytebuddy.SubclassByteBuddyMockMaker;
+import org.mockito.internal.util.ConsoleMockitoLogger;
+import org.mockito.internal.util.Platform;
 import org.mockito.invocation.MockHandler;
 import org.mockito.mock.MockCreationSettings;
 import org.mockito.plugins.MockMaker;
 
-public class AndroidByteBuddyMockMaker implements MockMaker {
+import static org.mockito.internal.util.StringJoiner.join;
 
-    private final MockMaker delegate = new SubclassByteBuddyMockMaker(new AndroidLoadingStrategy());
+public class AndroidByteBuddyMockMaker extends ConsoleMockitoLogger implements MockMaker {
+
+    private final MockMaker delegate;
+
+    public AndroidByteBuddyMockMaker() {
+        if (Platform.isAndroid() || Boolean.getBoolean("org.mockito.mock.android")) {
+            delegate = new SubclassByteBuddyMockMaker(new AndroidLoadingStrategy());
+        } else {
+            log(join(
+                    "IMPORTANT NOTE FROM MOCKITO:",
+                    "",
+                    "You included the 'mockito-android' dependency in a non-Android environment.",
+                    "The Android mock maker was disabled. You should only include the latter in your 'androidTestCompile' configuration",
+                    "If disabling was a mistake, you can set the 'org.mockito.mock.android' property to 'true' to override this behavior."
+            ));
+            delegate = new SubclassByteBuddyMockMaker();
+        }
+    }
 
     @Override
     public <T> T createMock(MockCreationSettings<T> settings, MockHandler handler) {
